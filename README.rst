@@ -46,8 +46,7 @@ Running the Bot / Tools
 --------------------------------------------------
 Map Maker Options
 --------------------------------------------------
-+onlyfloor
-   - Shortcut for all of these:
++onlyfloor   Shortcut for all of these:
    
 +nostairs     -> disables stair rendering
 +nomonsters   -> disables monster rendering
