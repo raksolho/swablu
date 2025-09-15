@@ -64,3 +64,5 @@ Notes
 --------------------------------------------------
 - Ensure all assets and XML files are correctly in "assets"
 - Different seeds produce different dungeon layouts
+If you have any questions or problems, please feel free to DM me in Discord: Raks
+It might bug a bit because it was a personal project based on an existing code, so please let me know!
