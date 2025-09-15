@@ -48,10 +48,10 @@ Map Maker Options
 --------------------------------------------------
 +onlyfloor
    - Shortcut for all of these:
-     +nostairs     -> disables stair rendering
-     +nomonsters   -> disables monster rendering
-     +noflooritems -> disables floor item rendering
-     +notraps      -> disables trap rendering
++nostairs     -> disables stair rendering
++nomonsters   -> disables monster rendering
++noflooritems -> disables floor item rendering
++notraps      -> disables trap rendering
 
 +nokecleon      -> disables Kecleon shop rendering
 +burieditems    -> shows buried items
