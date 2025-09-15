@@ -77,8 +77,8 @@ from skytemple_rust.st_dpci import Dpci
 from skytemple_rust.st_dpl import Dpl
 from skytemple_rust.st_dpla import Dpla
 
-if __name__ != "__main__":
-    from swablu.config import discord_writes_enabled, discord_client, DISCORD_CHANNEL_FLOOR_GENERATOR_BOT
+# if __name__ != "__main__":
+#     from swablu.config import discord_writes_enabled, discord_client, DISCORD_CHANNEL_FLOOR_GENERATOR_BOT
 
 logger = logging.getLogger(__name__)
 DTEF_XML_NAME = "tileset.dtef.xml"
@@ -97,7 +97,7 @@ class UserError(Exception):
 
 
 def asset_path() -> str:
-    return os.environ["EOS_DUNGEONS_TILESET_PATH"]
+    return 'assets/dungeon_tiles'
 
 
 class DtefProvider:
@@ -405,12 +405,13 @@ def generate_floor(options: Options, in_floor: MappaFloorProtocol, tileset: Tupl
 
 class FixedRoomDrawer:
     def __init__(
-            self, options: Options, fixed_floor: FixedFloor, dma: Dma, dpc: Dpc, dpci: Dpci, dpl: Dpl, _dpla: Dpla
+            self, options: Options, fixed_floor: FixedFloor, dma: Dma, dpc: Dpc, dpci: Dpci, dpl: Dpl, dpla: Dpla
     ):
         self.dma = dma
         self.dpci = dpci
         self.dpc = dpc
         self.dpl = dpl
+        self.dpla = dpla
 
         self.options = options
         self.fixed_floor = fixed_floor
@@ -657,18 +658,18 @@ class SpriteProvider:
 
 if __name__ == "__main__":
     # If this is run as a script, it will try to create the file structure for EOS_DUNGEONS_TILESET_PATH
-    # at /tmp/dungeon_tiles and then exit. It will use the ROM at /tmp/rom.nds as a base for this.
+    # at /assets/dungeon_tiles and then exit. It will use the ROM at /assets/rom.nds as a base for this.
 
     DUNGEON_BIN = 'DUNGEON/dungeon.bin'
     ITEM_BIN = 'BALANCE/item_p.bin'
     MONSTER_MD = 'BALANCE/monster.md'
     MONSTER_BIN = 'MONSTER/monster.bin'
-    OUT_PATH = "/tmp/dungeon_tiles"
+    OUT_PATH = "../assets/dungeon_tiles"
     NUMBER_OF_TILESETS = 170
 
     shutil.rmtree(OUT_PATH, ignore_errors=True)
     os.makedirs(OUT_PATH)
-    rom = NintendoDSRom.fromFile("/tmp/rom.nds")
+    rom = NintendoDSRom.fromFile("../assets/rom.nds")
 
     # /dungeon.bin
     with open(os.path.join(OUT_PATH, "dungeon.bin"), "wb") as f:
