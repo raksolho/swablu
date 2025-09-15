@@ -52,10 +52,11 @@ Map Maker Options
      +nomonsters   -> disables monster rendering
      +noflooritems -> disables floor item rendering
      +notraps      -> disables trap rendering
-     +nokecleon      -> disables Kecleon shop rendering
-     +burieditems    -> shows buried items
-     +nopatches      -> ignores "UnusedDungeonChancePatch"
-     +seed:<seed>    -> sets the random generator seed
+
++nokecleon      -> disables Kecleon shop rendering
++burieditems    -> shows buried items
++nopatches      -> ignores "UnusedDungeonChancePatch"
++seed    -> sets the random generator seed
 
 --------------------------------------------------
 Notes
