@@ -28,10 +28,7 @@ Setup Instructions
 --------------------------------------------------
 Running the Bot / Tools
 --------------------------------------------------
-1) Running the dungeon script:
-   cd swablu/specific
-   python eos_dungeons.py
-   cd ..
+1) Running the setup script:  py setup_and_run.py and then don't forget to cd swablu after
 
 2) Running the Map Maker GUI:
    python mapmaker_gui.py
