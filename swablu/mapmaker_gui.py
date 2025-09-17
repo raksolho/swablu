@@ -11,7 +11,7 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 try:
-    from map_maker import generate_map_from_xml
+    from map_maker import generate_map
 except ImportError as e:
     print(f"Error importing generate_map_from_xml: {e}")
     print("Make sure you're running this from the project root directory")
@@ -217,7 +217,7 @@ class MapMakerGUI:
             if floor_layout is None:
                 raise ValueError("XML file does not contain a 'FloorLayout' element.")
 
-            png_data = generate_map_from_xml(self.selected_file.get(), options)
+            png_data = generate_map(self.selected_file.get(), options)
             self.generated_image_data = png_data
             self.show_preview(png_data)
             self.status_label.config(text="Map generated successfully! Preview shown below.")
