@@ -42,7 +42,6 @@ from zipfile import ZipFile
 
 import cairo
 from PIL import Image
-from discord import TextChannel, Message, Embed, Colour, Attachment, File
 from ndspy.rom import NintendoDSRom
 
 from skytemple_files.common.impl_cfg import change_implementation_type, ImplementationType
@@ -187,116 +186,8 @@ class Options:
                 raise UserError("Invalid Option", f"Unknown option: {part}")
 
 
-async def start():
-    if not discord_writes_enabled():
-        return
-
-    try:
-        channel: TextChannel = discord_client.get_channel(DISCORD_CHANNEL_FLOOR_GENERATOR_BOT)
-
-        first_message_by_me: Optional[Message] = None
-        async for message in channel.history(limit=50, oldest_first=True):
-            if message.author.id == discord_client.user.id:
-                first_message_by_me = message
-                break
-
-        if first_message_by_me is not None:
-            await first_message_by_me.edit(content=__doc__)
-        else:
-            await channel.send(content=__doc__)
-
-    except Exception as exc:
-        logger.exception(f"Failed setting up eos_dungeons for channel {DISCORD_CHANNEL_FLOOR_GENERATOR_BOT}.",
-            exc_info=exc)
-
-
-async def process_message(message: Message) -> bool:
-    if not discord_writes_enabled():
-        return
-
-    if message.author.id == discord_client.user.id:
-        return False
-
-    if message.channel.id != DISCORD_CHANNEL_FLOOR_GENERATOR_BOT:
-        return False
-
-    if len(message.attachments) < 1:
-        return False
-
-    with message.channel.typing():
-        channel: TextChannel = message.channel
-
-        try:
-            options = Options(message.content)
-
-            floor_xml_bytes: Optional[bytes] = None
-            dtef_zip_bytes: Optional[bytes] = None
-
-            for attachment in message.attachments:
-                attachment: Attachment
-                if attachment.filename.lower().endswith(".xml"):
-                    if floor_xml_bytes is not None:
-                        raise UserError("Invalid attachments.", "You attached multiple XML files. Please only attach one.")
-                    floor_xml_bytes = await attachment.read()
-                elif attachment.filename.lower().endswith(".zip"):
-                    if dtef_zip_bytes is not None:
-                        raise UserError("Invalid attachments.", "You attached multiple ZIP files. Please only attach one.")
-                    dtef_zip_bytes = await attachment.read()
-                else:
-                    raise UserError("Invalid attachments.", "Attach only one XML file and optionally one ZIP file.")
-
-            if floor_xml_bytes is None:
-                raise UserError("Invalid attachments.", "You did not attach a floor XML file. Please attach a floor XML file as well.")
-
-            try:
-                xml = ElementTree.parse(BytesIO(floor_xml_bytes)).getroot()
-            except ParseError as er:
-                raise UserError("XML Error", f"The floor XML you provided can't be parsed: {str(er)}")
-
-            try:
-                floor: MappaFloorProtocol = mappa_floor_from_xml(xml, ITEM_CATEGORIES_BY_NAME)
-            except XmlValidateError as er:
-                raise UserError("XML Error", f"The floor XML you provided is invalid: {str(er)}")
-
-            with DtefProvider(dtef_zip_bytes, floor.layout.tileset_id) as dtef_dir_name:
-                for fname in [DTEF_XML_NAME, DTEF_VAR0_FN, DTEF_VAR1_FN, DTEF_VAR2_FN]:
-                    if not os.path.exists(os.path.join(dtef_dir_name, DTEF_XML_NAME)):
-                        raise UserError("DTEF Error", f"The DTEF ZIP you provided does not contain a {fname} file.")
-
-                tileset: Tuple[Dma, Dpc, Dpci, Dpl, Dpla] = dungeon_data_files()
-                importer = ExplorersDtefImporter(*tileset)
-                try:
-                    importer.do_import(
-                        dtef_dir_name,
-                        os.path.join(dtef_dir_name, DTEF_XML_NAME),
-                        os.path.join(dtef_dir_name, DTEF_VAR0_FN),
-                        os.path.join(dtef_dir_name, DTEF_VAR1_FN),
-                        os.path.join(dtef_dir_name, DTEF_VAR2_FN)
-                    )
-                except ValueError as er:
-                    raise UserError("DTEF Error", f"The DTEF ZIP you provided is invalid: {str(er)}")
-
-                # Now we can finally draw :pogcash:
-                png_file = generate_floor(options, floor, tileset)
-
-                await channel.send(file=File(png_file, "floor.png"))
-
-        except UserError as err:
-            await channel.send(embed=Embed(
-                title=err.title,
-                description=err.message,
-                colour=Colour.red()
-            ))
-        except Exception:
-            await channel.send(embed=Embed(
-                title="Internal Error",
-                description=f"Oh oh! There was an internal error while trying to process your message:\n\n```\n{traceback.format_exc()}\n```",
-                colour=Colour.dark_red()
-            ))
-
-        return True
-
-
+ 
+ 
 ####################################
 # Actual drawing code, forked from SkyTemple
 TRAP_PALETTE_MAP = {
