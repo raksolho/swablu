@@ -15,30 +15,16 @@ bot at: https://github.com/SkyTemple/swablu
 Setup Instructions
 --------------------------------------------------
 1) Clone the repository
-2) Install dependencies:
-   pip install -r requirements.txt
-   (if this doesn't work, install each one separately)
-
-3) Place your ROM in the "assets" folder.
-
-4) Place your XML file in the "assets" folder.
-   - You can generate one using SkyTemple.
-   - A sample XML file `testFloor.xml` is included.
-
+2) run py setup_and_run.py
 --------------------------------------------------
 Running the Bot / Tools
 --------------------------------------------------
-1) Running the setup script:  py setup_and_run.py and then don't forget to cd swablu after
-
-2) Running the Map Maker GUI:
+1) Running the Map Maker GUI:
    python mapmaker_gui.py
    - Opens a GUI with all options.
+   -Select your ROM, XML and options, then click "Generate Map"
+   - A sample XML file `testFloor.xml` is included.
 
-3) Running the Map Maker from console:
-   python map_maker.py <xml-file> [options]
-
-   Example:
-   python map_maker.py testFloor.xml +seed:1
 
 --------------------------------------------------
 Map Maker Options

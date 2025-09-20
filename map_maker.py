@@ -22,8 +22,7 @@ STATIC = Pmd2XmlReader.load_default()
 ITEMS_BY_NAME = {x.name: x for x in STATIC.dungeon_data.item_categories.values()}
 
 # --- Main generation function ---
-def generate_map(xml_file, flags=[]):
-    xml_path = os.path.join("assets", xml_file)
+def generate_map(xml_path, flags=[]):
     if not os.path.exists(xml_path):
         raise FileNotFoundError(f"XML file not found: {xml_path}")
 

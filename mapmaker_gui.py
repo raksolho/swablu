@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
 import sys
+import subprocess
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -27,6 +28,8 @@ class MapMakerGUI:
         self.root.geometry("600x700")
 
         self.selected_file = tk.StringVar()
+        self.selected_rom = tk.StringVar()
+
         self.options = {}
         self.generated_image_data = None
 
@@ -65,16 +68,20 @@ class MapMakerGUI:
             font=("Arial", 16, "bold")
         )
         title_label.grid(row=0, column=0, columnspan=2, pady=(0, 20))
-
+        rom_frame= ttk.LabelFrame(main_frame, text="Select ROM File", padding="10")
+        rom_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        ttk.Label(rom_frame).grid(row=0, column=0, sticky=tk.W)
+        ttk.Button(rom_frame, text="Browse...", command=self.browse_rom).grid(row=0, column=1, padx=(10, 0))
+        self.rom_label = ttk.Label(rom_frame, text="No file selected", foreground="gray")
+        self.rom_label.grid(row=0, column=2 , sticky=(tk.W, tk.E))
         file_frame = ttk.LabelFrame(main_frame, text="Select XML File", padding="10")
-        file_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
-
+        file_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         ttk.Button(file_frame, text="Browse...", command=self.browse_file).grid(row=0, column=0, padx=(0, 10))
         self.file_label = ttk.Label(file_frame, text="No file selected", foreground="gray")
         self.file_label.grid(row=0, column=1, sticky=(tk.W, tk.E))
 
         options_frame = ttk.LabelFrame(main_frame, text="Generation Options", padding="10")
-        options_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        options_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
 
         presets_frame = ttk.LabelFrame(options_frame, text="Quick Presets", padding="5")
         presets_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
@@ -157,6 +164,16 @@ class MapMakerGUI:
             self.selected_file.set(filename)
             self.file_label.config(text=os.path.basename(filename), foreground="black")
             self.status_label.config(text="File selected. Ready to generate!")
+    def browse_rom(self):
+        filename = filedialog.askopenfilename(
+            title="Select ROM File",
+            filetypes=[("NDS files", "*.nds"), ("All files", "*.*")]
+        )
+        if filename:
+            self.selected_rom.set(filename)
+            self.rom_label.config(text=os.path.basename(filename), foreground="black")
+            self.status_label.config(text="File selected. Ready to generate!")
+            subprocess.run([sys.executable, "specific/eos_dungeons.py", self.selected_rom.get()])
 
     def on_only_floor_changed(self, *args):
         if self.options['onlyfloor'].get():
