@@ -1,13 +1,9 @@
-
-"""
-Simple GUI interface for the map maker that directly calls generate_map_from_xml
-"""
-
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
 import sys
 import subprocess
+import threading
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -23,7 +19,7 @@ except ImportError as e:
 class MapMakerGUI:
     def __init__(self, root):
         self.root = root
-        
+
         self.root.title("PMD Map Generator")
         self.root.geometry("600x700")
 
@@ -39,13 +35,13 @@ class MapMakerGUI:
         container = ttk.Frame(self.root)
         container.grid(row=0, column=0, sticky="nsew")
 
-        canvas = tk.Canvas(container, borderwidth=0,width=600)
-        
+        canvas = tk.Canvas(container, borderwidth=0, width=600)
+
         vscrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
         canvas.configure(yscrollcommand=vscrollbar.set)
 
         vscrollbar.pack(side="right", fill="both")
-        canvas.pack(side="bottom",anchor='center', fill="both", expand=True)
+        canvas.pack(side="bottom", anchor='center', fill="both", expand=True)
 
         main_frame = ttk.Frame(canvas, padding="20")
         canvas.create_window((0, 0), window=main_frame, anchor="nw")
@@ -55,12 +51,13 @@ class MapMakerGUI:
 
         def on_configure(event):
             canvas.configure(scrollregion=canvas.bbox("all"))
+
         main_frame.bind("<Configure>", on_configure)
 
         def _on_mousewheel(event):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
         title_label = ttk.Label(
             main_frame,
@@ -68,17 +65,21 @@ class MapMakerGUI:
             font=("Arial", 16, "bold")
         )
         title_label.grid(row=0, column=0, columnspan=2, pady=(0, 20))
-        rom_frame= ttk.LabelFrame(main_frame, text="Select ROM File", padding="10")
+
+        rom_frame = ttk.LabelFrame(main_frame, text="Select ROM File", padding="10")
         rom_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         ttk.Label(rom_frame).grid(row=0, column=0, sticky=tk.W)
         ttk.Button(rom_frame, text="Browse...", command=self.browse_rom).grid(row=0, column=1, padx=(10, 0))
         self.rom_label = ttk.Label(rom_frame, text="No file selected", foreground="gray")
-        self.rom_label.grid(row=0, column=2 , sticky=(tk.W, tk.E))
+        self.rom_label.grid(row=0, column=2, sticky=(tk.W, tk.E))
+
         file_frame = ttk.LabelFrame(main_frame, text="Select XML File", padding="10")
         file_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         ttk.Button(file_frame, text="Browse...", command=self.browse_file).grid(row=0, column=0, padx=(0, 10))
         self.file_label = ttk.Label(file_frame, text="No file selected", foreground="gray")
         self.file_label.grid(row=0, column=1, sticky=(tk.W, tk.E))
+
+        # XML Editor Button
 
         options_frame = ttk.LabelFrame(main_frame, text="Generation Options", padding="10")
         options_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
@@ -142,7 +143,7 @@ class MapMakerGUI:
         self.preview_frame = ttk.LabelFrame(main_frame, text="Map Preview", padding="10")
         self.preview_frame.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
 
-        self.preview_label = ttk.Label(self.preview_frame, text="No map generated yet",width=90)
+        self.preview_label = ttk.Label(self.preview_frame, text="No map generated yet", width=90)
         self.preview_label.pack(expand=True, fill='both')
 
         self.save_btn = ttk.Button(self.preview_frame, text="💾 Save Map",
@@ -155,6 +156,29 @@ class MapMakerGUI:
 
         self.options['onlyfloor'].trace('w', self.on_only_floor_changed)
 
+    # ------------------- XML Editor -------------------
+    def open_xml_editor(self, xml_file=None):
+        """
+        Opens the XML editor with the provided file.
+        If xml_file is None, uses the currently selected XML file.
+        """
+        if xml_file is None:
+            xml_file = self.selected_file.get()
+
+        if not xml_file:
+            messagebox.showerror("No File", "Please select an XML file first!")
+            return
+
+        editor_script = os.path.join(os.path.dirname(__file__), "xml_editor.py")
+        if not os.path.exists(editor_script):
+            messagebox.showerror("Editor Not Found", "The XML editor script was not found!")
+            return
+
+        # Open editor in a new process with the XML
+        subprocess.Popen([sys.executable, editor_script, xml_file])
+
+
+    # ------------------- Browse File & ROM -------------------
     def browse_file(self):
         filename = filedialog.askopenfilename(
             title="Select XML File",
@@ -163,7 +187,16 @@ class MapMakerGUI:
         if filename:
             self.selected_file.set(filename)
             self.file_label.config(text=os.path.basename(filename), foreground="black")
-            self.status_label.config(text="File selected. Ready to generate!")
+            self.status_label.config(text="File selected. Opening XML editor...")
+
+            # Automatically open the XML editor with the chosen file
+            editor_script = os.path.join(os.path.dirname(__file__), "xml_editor.py")
+            if not os.path.exists(editor_script):
+                messagebox.showerror("Editor Not Found", "The XML editor script was not found!")
+                return
+            subprocess.Popen([sys.executable, editor_script, filename])
+
+
     def browse_rom(self):
         filename = filedialog.askopenfilename(
             title="Select ROM File",
@@ -172,9 +205,37 @@ class MapMakerGUI:
         if filename:
             self.selected_rom.set(filename)
             self.rom_label.config(text=os.path.basename(filename), foreground="black")
-            self.status_label.config(text="File selected. Ready to generate!")
-            subprocess.run([sys.executable, "specific/eos_dungeons.py", self.selected_rom.get()])
+            self.status_label.config(text="Processing ROM... please wait")
 
+            # Loading popup
+            loading_win = tk.Toplevel(self.root)
+            loading_win.title("Loading")
+            loading_win.geometry("300x100")
+            loading_win.transient(self.root)
+            loading_win.grab_set()
+
+            ttk.Label(loading_win, text="Processing ROM, please wait...").pack(pady=10)
+            progress = ttk.Progressbar(loading_win, mode="indeterminate")
+            progress.pack(fill="x", padx=20, pady=10)
+            progress.start()
+
+            def run_rom_setup():
+                try:
+                    subprocess.run(
+                        [sys.executable, "specific/eos_dungeons.py", self.selected_rom.get()],
+                        check=True
+                    )
+                    self.status_label.config(text="ROM processed successfully!")
+                except subprocess.CalledProcessError as e:
+                    messagebox.showerror("Error", f"ROM processing failed:\n{e}")
+                    self.status_label.config(text="ROM processing failed")
+                finally:
+                    progress.stop()
+                    loading_win.destroy()
+
+            threading.Thread(target=run_rom_setup, daemon=True).start()
+
+    # ------------------- Other Existing Functions -------------------
     def on_only_floor_changed(self, *args):
         if self.options['onlyfloor'].get():
             self.options['nostairs'].set(True)
