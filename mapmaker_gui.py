@@ -109,14 +109,27 @@ class MapMakerGUI:
 
         advanced_frame = ttk.LabelFrame(options_frame, text="Advanced Options", padding="5")
         advanced_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        # In the advanced_frame section
+        self.options['showgrid'] = tk.BooleanVar()
+        ttk.Checkbutton(
+            advanced_frame,
+            text="Show Grid",
+            variable=self.options['showgrid']
+        ).grid(row=0, column=0, sticky=tk.W)
 
         self.options['burieditems'] = tk.BooleanVar()
-        ttk.Checkbutton(advanced_frame, text="Show Buried Items",
-                        variable=self.options['burieditems']).grid(row=0, column=0, sticky=tk.W)
+        ttk.Checkbutton(
+            advanced_frame,
+            text="Show Buried Items",
+            variable=self.options['burieditems']
+        ).grid(row=1, column=0, sticky=tk.W)
 
         self.options['nopatches'] = tk.BooleanVar()
-        ttk.Checkbutton(advanced_frame, text="No Patches",
-                        variable=self.options['nopatches']).grid(row=0, column=1, sticky=tk.W)
+        ttk.Checkbutton(
+            advanced_frame,
+            text="No Patches",
+            variable=self.options['nopatches']
+        ).grid(row=1, column=1, sticky=tk.W)
 
         seed_frame = ttk.Frame(advanced_frame)
         seed_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
@@ -253,7 +266,8 @@ class MapMakerGUI:
             'notraps': '+notraps',
             'nokecleon': '+nokecleon',
             'burieditems': '+burieditems',
-            'nopatches': '+nopatches'
+            'nopatches': '+nopatches',
+            'showgrid': '+showgrid'
         }
         for key, flag in option_mapping.items():
             if self.options[key].get():
