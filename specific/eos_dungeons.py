@@ -159,7 +159,7 @@ class Options:
         self.monsters = True
         self.flooritems = True
         self.traps = True
-
+        self.grid=False
         self.kecleon = True
         self.burieditems = False
         self.patches = True
@@ -190,12 +190,14 @@ class Options:
                 self.patches = False
             elif part.startswith("+seed:"):
                 self.seed = int(part[6:])
+            elif part.startswith("+showgrid"):
+                self.grid = True
             else:
                 raise UserError("Invalid Option", f"Unknown option: {part}")
 
 
- 
- 
+
+
 ####################################
 # Actual drawing code, forked from SkyTemple
 TRAP_PALETTE_MAP = {
@@ -381,6 +383,41 @@ class FixedRoomDrawer:
                 sy = DPC_TILING_DIM * DPCI_TILE_DIM * y
                 self._draw_action(ctx, action, sx, sy)
                 ridx += 1
+
+        # -------------------------
+        # DRAW GRID ON TOP OF EVERYTHING
+
+        if self.options.grid:
+            # -------------------------
+            # cell size (pixels) per logical tile (matches how sprites are positioned)
+            cell_size = DPC_TILING_DIM * DPCI_TILE_DIM
+
+            # Color: RGBA black with alpha ~0.5 (use set_source_rgba)
+            # Cairo uses 0..1 floats for colors.
+            ctx.set_source_rgba(0.0, 0.0, 0.0, 0.5)
+
+            # Use a hairline of 1 device pixel (we offset by 0.5 so lines fall between pixels on some backends)
+            ctx.set_line_width(1.0)
+
+            # Build all vertical lines path
+            ctx.new_path()
+            x = 0
+            while x <= size_w:
+                # offset by 0.5 keeps lines sharp on many pixels backends
+                ctx.move_to(x + 0.5, 0)
+                ctx.line_to(x + 0.5, size_h)
+                x += cell_size
+
+            # Build all horizontal lines path
+            y = 0
+            while y <= size_h:
+                ctx.move_to(0, y + 0.5)
+                ctx.line_to(size_w, y + 0.5)
+                y += cell_size
+
+        # Stroke once for performance
+        ctx.stroke()
+        # -------------------------
 
         obj = BytesIO()
         surface.write_to_png(obj)
@@ -636,7 +673,7 @@ if __name__ == "__main__":
         f.write(rom.getFileByName(MONSTER_MD))
 
     # /monster.bin
-    with open(os.path.join(OUT_PATH, "monster.bin"), "wb") as f:
+    with open(os.path.join(os.path.join(OUT_PATH), "monster.bin"), "wb") as f:
         f.write(rom.getFileByName(MONSTER_BIN))
 
     # /dtef/x/

@@ -122,14 +122,14 @@ class MapMakerGUI:
             advanced_frame,
             text="Show Buried Items",
             variable=self.options['burieditems']
-        ).grid(row=1, column=0, sticky=tk.W)
+        ).grid(row=0, column=1, sticky=tk.W)
 
         self.options['nopatches'] = tk.BooleanVar()
         ttk.Checkbutton(
             advanced_frame,
             text="No Patches",
             variable=self.options['nopatches']
-        ).grid(row=1, column=1, sticky=tk.W)
+        ).grid(row=0, column=2, sticky=tk.W)
 
         seed_frame = ttk.Frame(advanced_frame)
         seed_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
@@ -145,16 +145,16 @@ class MapMakerGUI:
             command=self.generate_map,
             style="Accent.TButton"
         )
-        self.generate_btn.grid(row=3, column=0, columnspan=2, pady=20)
+        self.generate_btn.grid(row=4, column=0, columnspan=2, pady=20)
 
         self.progress = ttk.Progressbar(main_frame, mode='indeterminate')
-        self.progress.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        self.progress.grid(row=5, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
 
         self.status_label = ttk.Label(main_frame, text="Ready to generate maps!")
-        self.status_label.grid(row=5, column=0, columnspan=2)
+        self.status_label.grid(row=6, column=0, columnspan=2)
 
         self.preview_frame = ttk.LabelFrame(main_frame, text="Map Preview", padding="10")
-        self.preview_frame.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
+        self.preview_frame.grid(row=7, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
 
         self.preview_label = ttk.Label(self.preview_frame, text="No map generated yet", width=90)
         self.preview_label.pack(expand=True, fill='both')
