@@ -14,7 +14,7 @@ bot at: https://github.com/SkyTemple/swablu
 --------------------------------------------------
 Setup Instructions
 --------------------------------------------------
-1) Clone the repository
+1) Clone the repository or download the ZIP and extract it.
 2) run py setup_and_run.py
 --------------------------------------------------
 Running the Bot / Tools

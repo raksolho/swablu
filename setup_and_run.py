@@ -35,7 +35,7 @@ os.chdir(script_dir)
 # --- Get ROM path from command line or default ---
 rom_path = sys.argv[1] if len(sys.argv) > 1 else None
 if rom_path is None:
-    print("Usage: python run_dungeons.py <path_to_rom>")
+    print("Usage: python mapmaker_gui.py")
     sys.exit(1)
 
 # --- Run eos_dungeons.py with the ROM ---

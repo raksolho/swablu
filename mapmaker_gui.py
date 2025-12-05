@@ -79,6 +79,10 @@ class MapMakerGUI:
         self.file_label = ttk.Label(file_frame, text="No file selected", foreground="gray")
         self.file_label.grid(row=0, column=1, sticky=(tk.W, tk.E))
 
+        # --- Show Tiles Button (moved here) ---
+        self.show_tiles_btn = ttk.Button(file_frame, text="Show Tiles", command=self.show_tiles_window)
+        self.show_tiles_btn.grid(row=1, column=0, columnspan=2, pady=(10, 0), sticky=(tk.W, tk.E))
+
         # XML Editor Button
 
         options_frame = ttk.LabelFrame(main_frame, text="Generation Options", padding="10")
@@ -163,6 +167,124 @@ class MapMakerGUI:
                                    command=self.save_map, state='disabled')
         self.save_btn.pack(pady=(10, 0))
 
+        # --- Show Tiles Button ---
+        # (Moved to file_frame above)
+    def show_tiles_window(self):
+        # Only show tiles if both XML and ROM are selected
+        if not self.selected_file.get() or not self.selected_rom.get():
+            messagebox.showwarning("Select Files", "Please select both an XML file and a ROM file before viewing tiles.")
+            return
+
+        import glob
+        import tempfile
+        from PIL import Image, ImageTk
+        tiles_win = tk.Toplevel(self.root)
+        tiles_win.title("Tiles Preview")
+        tiles_win.geometry("800x600")
+        frame = ttk.Frame(tiles_win, padding="10")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        canvas = tk.Canvas(frame, borderwidth=0)
+        vscrollbar = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vscrollbar.set)
+        vscrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        inner_frame = ttk.Frame(canvas)
+        canvas.create_window((0, 0), window=inner_frame, anchor="nw")
+
+        def on_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        inner_frame.bind("<Configure>", on_configure)
+
+        # Find all tileset_0.png files in assets/dungeon_tiles/dtef/*/tileset_0.png
+        base_dir = os.path.join(os.path.dirname(__file__), "assets", "dungeon_tiles", "dtef")
+        print(f"[DEBUG] Searching for tiles in: {base_dir}")
+        search_pattern = os.path.join(base_dir, "*", "tileset_0.png")
+        print(f"[DEBUG] Using glob pattern: {search_pattern}")
+        png_files = glob.glob(search_pattern)
+        print(f"[DEBUG] Found {len(png_files)} tileset_0.png files:")
+        for f in png_files:
+            print(f"[DEBUG]   {f}")
+        if not png_files:
+            ttk.Label(inner_frame, text="No tileset_0.png files found in dungeon_tiles/dtef subfolders.").pack()
+            return
+
+        self._tile_images = []  # Keep references to avoid garbage collection
+        import functools
+        def set_tileset(tileset_id):
+            self.selected_tileset = tileset_id
+            self.status_label.config(text=f"Tileset set to {tileset_id}")
+            print(f"[DEBUG] Tileset set to {tileset_id}")
+            # Regenerate map instantly
+            self.regenerate_map_with_tileset(tileset_id)
+        for i, png_path in enumerate(png_files):
+            try:
+                print(f"[DEBUG] Loading image: {png_path}")
+                img = Image.open(png_path)
+                img.thumbnail((128, 128))
+                photo = ImageTk.PhotoImage(img)
+                self._tile_images.append(photo)
+                tile_frame = ttk.Frame(inner_frame, padding=5)
+                tile_frame.grid(row=i // 5, column=i % 5, padx=5, pady=5)
+                parent_folder = os.path.basename(os.path.dirname(png_path))
+                label = ttk.Label(tile_frame, image=photo)
+                label.pack()
+                name_label = ttk.Label(tile_frame, text=f"{parent_folder}/tileset_0.png", font=("Arial", 8))
+                name_label.pack()
+                # Bind click event to set tileset
+                label.bind("<Button-1>", functools.partial(lambda _e, tid: set_tileset(tid), tid=parent_folder))
+            except Exception as e:
+                print(f"[DEBUG] Error loading {png_path}: {e}")
+                ttk.Label(inner_frame, text=f"Error loading {os.path.basename(png_path)}: {e}").pack()
+
+    def regenerate_map_with_tileset(self, tileset_id):
+        # Regenerate map using the selected tileset
+        # Only works if an XML file is selected
+        if not self.selected_file.get():
+            self.status_label.config(text="Select an XML file first!")
+            return
+        # Patch the XML file's FloorLayout tileset attribute
+        import xml.etree.ElementTree as ET
+        xml_path = self.selected_file.get()
+        try:
+            tree = ET.parse(xml_path)
+            root = tree.getroot()
+            floor_layout = root.find('FloorLayout')
+            if floor_layout is not None:
+                floor_layout.set('tileset', str(tileset_id))
+                tree.write(xml_path)
+                print(f"[DEBUG] Updated tileset in XML to {tileset_id}")
+            else:
+                self.status_label.config(text="No FloorLayout element in XML!")
+                return
+        except Exception as e:
+            self.status_label.config(text=f"Error updating tileset: {e}")
+            print(f"[DEBUG] Error updating tileset: {e}")
+            return
+        # Regenerate map
+        self.generate_map()
+
+        for i, png_path in enumerate(png_files):
+            try:
+                print(f"[DEBUG] Loading image: {png_path}")
+                img = Image.open(png_path)
+                img.thumbnail((128, 128))
+                photo = ImageTk.PhotoImage(img)
+                self._tile_images.append(photo)
+                tile_frame = ttk.Frame(inner_frame, padding=5)
+                tile_frame.grid(row=i // 5, column=i % 5, padx=5, pady=5)
+                parent_folder = os.path.basename(os.path.dirname(png_path))
+                label = ttk.Label(tile_frame, image=photo)
+                label.pack()
+                name_label = ttk.Label(tile_frame, text=f"{parent_folder}/tileset_0.png", font=("Arial", 8))
+                name_label.pack()
+                # Bind click event to set tileset
+                label.bind("<Button-1>", functools.partial(lambda _e, tid: set_tileset(tid), tid=parent_folder))
+            except Exception as e:
+                print(f"[DEBUG] Error loading {png_path}: {e}")
+                ttk.Label(inner_frame, text=f"Error loading {os.path.basename(png_path)}: {e}").pack()
+
         main_frame.columnconfigure(1, weight=1)
         file_frame.columnconfigure(1, weight=1)
         options_frame.columnconfigure(1, weight=1)
@@ -218,6 +340,14 @@ class MapMakerGUI:
         if filename:
             self.selected_rom.set(filename)
             self.rom_label.config(text=os.path.basename(filename), foreground="black")
+
+            # Check if dtef files already exist
+            dtef_dir = os.path.join(os.path.dirname(__file__), "assets", "dungeon_tiles", "dtef")
+            if os.path.isdir(dtef_dir) and any(os.path.isdir(os.path.join(dtef_dir, name)) for name in os.listdir(dtef_dir)):
+                self.status_label.config(text="ROM already processed (dtef files found)")
+                messagebox.showinfo("ROM Processing Skipped", "ROM processing skipped: dtef files already exist.")
+                return
+
             self.status_label.config(text="Processing ROM... please wait")
 
             # Loading popup
