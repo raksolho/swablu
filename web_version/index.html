@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>PMD Map Generator</title>
+        <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .preview { max-width: 100%; border: 1px solid #ccc; }
+        button { padding: 10px 15px; margin: 5px; }
+        input[type="file"] { margin: 5px; }
+        .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .status { padding: 10px; background: #f0f0f0; border-radius: 3px; }
+    </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>PMD Map Generator</h1>
+
+            <div class="section">
+                <h2>Select XML File</h2>
+                <input type="file" id="xmlFile" accept=".xml">
+                <p id="xmlStatus">No file selected</p>
+            </div>
+
+            <div class="section">
+                <h2>Generation Options</h2>
+                <div class="options">
+                    <label><input type="checkbox" id="onlyfloor"> Only Floor (no
+                        items/monsters)</label>
+                    <label><input type="checkbox" id="nostairs"> No
+                        Stairs</label>
+                    <label><input type="checkbox" id="nomonsters"> No
+                        Monsters</label>
+                    <label><input type="checkbox" id="noflooritems"> No Floor
+                        Items</label>
+                    <label><input type="checkbox" id="notraps"> No Traps</label>
+                    <label><input type="checkbox" id="nokecleon"> No
+                        Kecleon</label>
+                    <label><input type="checkbox" id="burieditems"> Show Buried
+                        Items</label>
+                    <label><input type="checkbox" id="nopatches"> No
+                        Patches</label>
+                    <label><input type="checkbox" id="showgrid"> Show
+                        Grid</label>
+                </div>
+                <div>
+                    <label>Seed: <input type="number" id="seed"
+                            placeholder="Random"></label>
+                </div>
+            </div>
+
+            <div class="section">
+                <button id="generateBtn">Generate Map</button>
+                <button id="saveBtn" disabled>Save Map</button>
+            </div>
+
+            <div class="status" id="status">Ready</div>
+
+            <div class="section">
+
+                <h2>Map Preview</h2>
+
+                <canvas id="mapCanvas" width="0" height="0"></canvas>
+
+                <img id="preview" class="preview" style="display:none">
+
+                <p id="previewText">Map will appear here</p>
+
+            </div>
+        </div>
+
+        <script src="eos_dungeons.js"></script>
+        <script type="module" src="map_maker.js"></script>
+        <script>
+        let generatedDataUrl = null;
+
+        // Load assets on page load
+        window.addEventListener('load', () => {
+            // Assets are loaded on demand when generating
+        });
+
+        // File selection
+        document.getElementById('xmlFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('xmlStatus').textContent = `Selected: ${file.name}`;
+            } else {
+                document.getElementById('xmlStatus').textContent = 'No file selected';
+            }
+        });
+
+        // Generate button
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('xmlFile');
+            if (!fileInput.files[0]) {
+                alert('Please select an XML file first!');
+                return;
+            }
+
+            document.getElementById('status').textContent = 'Generating map...';
+            document.getElementById('generateBtn').disabled = true;
+
+            try {
+                const xmlText = await fileInput.files[0].text();
+                const options = getOptions();
+const dataUrl = await map_maker.generateMap(xmlText, options);
+
+// now this is a proper URL
+generatedDataUrl = dataUrl;
+
+const preview = document.getElementById('preview');
+preview.src = generatedDataUrl; // assign the object URL
+preview.style.display = 'block';
+generatedDataUrl = dataUrl; // store for saving later
+ 
+ 
+document.getElementById('previewText').style.display = 'none';
+document.getElementById('saveBtn').disabled = false;
+preview.style.display = 'block';
+document.getElementById('previewText').style.display = 'none';
+
+// now you can access tiles if you want to feed your renderer
+// const tiles = mapData.tiles;
+                preview.style.display = 'block';
+                document.getElementById('previewText').style.display = 'none';
+                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('status').textContent = 'Map generated successfully!';
+            } catch (error) {
+                if (error.message.includes('Tainted canvases')) {
+                    document.getElementById('status').textContent = 'Error: Canvas tainted. Please run a local server (e.g., python -m http.server) instead of opening as file://';
+                } else {
+                    document.getElementById('status').textContent = `Error: ${error.message}`;
+                }
+                console.error(error);
+            } finally {
+                document.getElementById('generateBtn').disabled = false;
+            }
+        });
+
+        // Save button
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            if (!generatedDataUrl) return;
+
+            const link = document.createElement('a');
+            link.href = generatedDataUrl;
+            link.download = 'generated_map.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        function getOptions() {
+            const options = [];
+            const checkboxes = ['onlyfloor', 'nostairs', 'nomonsters', 'noflooritems', 'notraps', 'nokecleon', 'burieditems', 'nopatches', 'showgrid'];
+
+            checkboxes.forEach(id => {
+                if (document.getElementById(id).checked) {
+                    options.push(`+${id}`);
+                }
+            });
+
+            const seed = document.getElementById('seed').value.trim();
+            if (seed) {
+                options.push(`+seed:${seed}`);
+            }
+
+            return options;
+        }
+    </script>
+    </body>
+</html>
