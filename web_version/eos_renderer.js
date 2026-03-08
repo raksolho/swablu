@@ -37,6 +37,7 @@ const BASE_RULES = [
   DmaNeighbor.WEST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
   DmaNeighbor.EAST | DmaNeighbor.SOUTH,
   DmaNeighbor.WEST | DmaNeighbor.EAST,
+ 
   DmaNeighbor.WEST | DmaNeighbor.SOUTH,
   DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.EAST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
   DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
@@ -47,10 +48,10 @@ const BASE_RULES = [
   DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.EAST,
   DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST,
   // index 14 is None in Python REMAP_RULES - skipped
+  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
   DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST,
   DmaNeighbor.NORTH | DmaNeighbor.EAST,
   DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
   DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
   DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH,
   DmaNeighbor.EAST,
@@ -157,9 +158,23 @@ const TILE_TYPE_OFFSET = {
 // REMAP_RULES has None at index 14, so the exported sheet has an empty/purple slot at (2,2) per type — we must skip it.
 const TILESHEET_WIDTH = 6;
 const TILESHEET_HEIGHT = 8;
+/** Linear position of the empty/purple slot in each type block (col=2, row=2 -> local index 14). */
+const EMPTY_SLOT_COL = 2;
+const EMPTY_SLOT_ROW = 2;
+
 /** Logical rule index 0..46 -> sheet position (skips index 14 = empty/purple slot). */
 function ruleIndexToSheetPosition(logicalIndex) {
   return logicalIndex < 14 ? logicalIndex : logicalIndex + 1;
+}
+
+/** Never sample the purple/empty slot; if we land on it, use the next tile. */
+function clampAwayFromEmptySlot(col, row, typeOffset) {
+  const localCol = col - TILESHEET_WIDTH * typeOffset;
+  const localRow = row;
+  if (localCol === EMPTY_SLOT_COL && localRow === EMPTY_SLOT_ROW) {
+    return { col: col + 1, row };
+  }
+  return { col, row };
 }
 
 function getMappedTileIndex(x, y, xmlTiles, ruleVariations) {
@@ -168,13 +183,18 @@ function getMappedTileIndex(x, y, xmlTiles, ruleVariations) {
   const type = map[y][x];
 
   const baseRule = reduceRule(rawBf);
-  const baseRuleIndex = BASE_RULES.indexOf(baseRule);
-  const idx = baseRuleIndex >= 0 ? baseRuleIndex : 0;
+  let baseRuleIndex = BASE_RULES.indexOf(baseRule);
+  if (baseRuleIndex < 0) {
+    baseRuleIndex = type === TILE_WALL ? BASE_RULES.indexOf(0xFF) : 0;
+    if (baseRuleIndex < 0) baseRuleIndex = 0;
+  }
+  const idx = baseRuleIndex;
 
   const sheetPos = ruleIndexToSheetPosition(idx);
   const typeOffset = TILE_TYPE_OFFSET[type] ?? 0;
-  const col = (sheetPos % TILESHEET_WIDTH) + (TILESHEET_WIDTH * typeOffset);
-  const row = Math.floor(sheetPos / TILESHEET_WIDTH);
+  let col = (sheetPos % TILESHEET_WIDTH) + (TILESHEET_WIDTH * typeOffset);
+  let row = Math.floor(sheetPos / TILESHEET_WIDTH);
+  ({ col, row } = clampAwayFromEmptySlot(col, row, typeOffset));
 
   return { col, row };
 }
