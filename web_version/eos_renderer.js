@@ -304,7 +304,7 @@ function exportDungeonPNG(tileImage) {
   }
 
   offCtx.fillStyle = "orange";
-  offCtx.fillRect(player.x * TILE_SIZE, player.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+  // offCtx.fillRect(player.x * TILE_SIZE, player.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
 
   return new Promise((resolve, reject) => {
     offCanvas.toBlob(blob => {
