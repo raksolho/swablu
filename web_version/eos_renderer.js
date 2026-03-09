@@ -157,13 +157,14 @@ const TILE_TYPE_OFFSET = {
 // Tilesheet layout matches explorers_dtef: 6 cols x 8 rows per type, 3 types side-by-side (18 cols total).
 // REMAP_RULES has None at index 14, so the exported sheet has an empty/purple slot at (2,2) per type — we must skip it.
 const TILESHEET_WIDTH = 6;
-const TILESHEET_HEIGHT = 8;
-/** Linear position of the empty/purple slot in each type block (col=2, row=2 -> local index 14). */
+ /** Linear position of the empty/purple slot in each type block (col=2, row=2 -> local index 14). */
 const EMPTY_SLOT_COL = 2;
 const EMPTY_SLOT_ROW = 2;
 
 /** Logical rule index 0..46 -> sheet position (skips index 14 = empty/purple slot). */
 function ruleIndexToSheetPosition(logicalIndex) {
+  if (logicalIndex === 15) return 33;
+  if(logicalIndex===17) return 10;
   return logicalIndex < 14 ? logicalIndex : logicalIndex + 1;
 }
 
