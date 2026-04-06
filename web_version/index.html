@@ -1,174 +1,363 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>PMD Map Generator</title>
-        <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .section { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
-        .preview { max-width: 100%; border: 1px solid #ccc; }
-        button { padding: 10px 15px; margin: 5px; }
-        input[type="file"] { margin: 5px; }
-        .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
-        .status { padding: 10px; background: #f0f0f0; border-radius: 3px; }
-    </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>PMD Map Generator</h1>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMD Map Generator</title>
 
-            <div class="section">
-                <h2>Select XML File</h2>
-                <input type="file" id="xmlFile" accept=".xml">
-                <p id="xmlStatus">No file selected</p>
-            </div>
+<style>
 
-            <div class="section">
-                <h2>Generation Options</h2>
-                <div class="options">
-                    <label><input type="checkbox" id="onlyfloor"> Only Floor (no
-                        items/monsters)</label>
-                    <label><input type="checkbox" id="nostairs"> No
-                        Stairs</label>
-                    <label><input type="checkbox" id="nomonsters"> No
-                        Monsters</label>
-                    <label><input type="checkbox" id="noflooritems"> No Floor
-                        Items</label>
-                    <label><input type="checkbox" id="notraps"> No Traps</label>
-                    <label><input type="checkbox" id="nokecleon"> No
-                        Kecleon</label>
-                    <label><input type="checkbox" id="burieditems"> Show Buried
-                        Items</label>
-                    <label><input type="checkbox" id="nopatches"> No
-                        Patches</label>
-                    <label><input type="checkbox" id="showgrid"> Show
-                        Grid</label>
-                </div>
-                <div>
-                    <label>Seed: <input type="number" id="seed"
-                            placeholder="Random"></label>
-                </div>
-            </div>
+@font-face{
+    font-family:"PMD";
+    src:url("PKMN-Mystery-Dungeon.ttf") format("truetype");
+}
 
-            <div class="section">
-                <button id="generateBtn">Generate Map</button>
-                <button id="saveBtn" disabled>Save Map</button>
-            </div>
+body{
+    margin:0;
+    font-family:"PMD", monospace;
+    background:#d6b97b;
+    background-image:radial-gradient(#e9d8a6 1px, transparent 1px);
+    background-size:8px 8px;
+}
 
-            <div class="status" id="status">Ready</div>
+.container{
+    max-width:900px;
+    margin:auto;
+    padding:30px;
+}
 
-            <div class="section">
+h1{
+    font-size:32px;
+    text-align:center;
+    color:#2b1a0e;
+    text-shadow:2px 2px #fff4d1;
+}
 
-                <h2>Map Preview</h2>
+.section{
+    background:#e9d8a6;
+    border:4px solid #5a3d1e;
+    border-radius:12px;
+    padding:18px;
+    margin-bottom:18px;
+    box-shadow:inset 0 2px #fff5c5, inset 0 -3px #caa86a;
+}
 
-                <canvas id="mapCanvas" width="0" height="0"></canvas>
+.options{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:6px;
+}
 
-                <img id="preview" class="preview" style="display:none">
+label{
+    background:#f3e1b3;
+    border:2px solid #8a6737;
+    border-radius:6px;
+    padding:6px 8px;
+    cursor:pointer;
+}
 
-                <p id="previewText">Map will appear here</p>
+button{
+    font-family:"PMD";
+    padding:10px 16px;
+    background:#3a6ea5;
+    color:white;
+    border:3px solid #1e3c63;
+    border-radius:10px;
+    cursor:pointer;
+}
 
-            </div>
-        </div>
+button:hover{
+    background:#4b85c4;
+}
 
-        <script src="eos_dungeons.js"></script>
-        <script type="module" src="map_maker.js"></script>
-        <script>
-        let generatedDataUrl = null;
+.preview{
+    border:4px solid #5a3d1e;
+    border-radius:6px;
+    width:500px;
+}
 
-        // Load assets on page load
-        window.addEventListener('load', () => {
-            // Assets are loaded on demand when generating
-        });
+.preview-wrapper{
+    text-align:center;
+}
 
-        // File selection
-        document.getElementById('xmlFile').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                document.getElementById('xmlStatus').textContent = `Selected: ${file.name}`;
-            } else {
-                document.getElementById('xmlStatus').textContent = 'No file selected';
-            }
-        });
+.status{
+    background:#fff6d6;
+    border:3px solid #8a6737;
+    border-radius:8px;
+    padding:8px;
+}
 
-        // Generate button
-        document.getElementById('generateBtn').addEventListener('click', async () => {
-            const fileInput = document.getElementById('xmlFile');
-            if (!fileInput.files[0]) {
-                alert('Please select an XML file first!');
-                return;
-            }
+/* Tiles modal */
 
-            document.getElementById('status').textContent = 'Generating map...';
-            document.getElementById('generateBtn').disabled = true;
+.tiles-modal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:1000;
+}
 
-            try {
-                const xmlText = await fileInput.files[0].text();
-                const options = getOptions();
-const dataUrl = await map_maker.generateMap(xmlText, options);
+.tiles-window{
+background:#e9d8a6;
+border:4px solid #5a3d1e;
+border-radius:12px;
+padding:20px;
+width:750px;
+height:520px;
+display:flex;
+flex-direction:column;
+}
 
-// now this is a proper URL
-generatedDataUrl = dataUrl;
+#tilesGrid{
+display:grid;
+grid-template-columns:repeat(5,1fr);
+gap:10px;
+overflow-y:auto;
+padding:10px;
+}
 
-const preview = document.getElementById('preview');
-preview.src = generatedDataUrl; // assign the object URL
-preview.style.display = 'block';
-generatedDataUrl = dataUrl; // store for saving later
- 
- 
-document.getElementById('previewText').style.display = 'none';
-document.getElementById('saveBtn').disabled = false;
-preview.style.display = 'block';
-document.getElementById('previewText').style.display = 'none';
+.tile{
+border:2px solid #5a3d1e;
+background:#fff6d6;
+cursor:pointer;
+padding:5px;
+text-align:center;
+}
 
-// now you can access tiles if you want to feed your renderer
-// const tiles = mapData.tiles;
-                preview.style.display = 'block';
-                document.getElementById('previewText').style.display = 'none';
-                document.getElementById('saveBtn').disabled = false;
-                document.getElementById('status').textContent = 'Map generated successfully!';
-            } catch (error) {
-                if (error.message.includes('Tainted canvases')) {
-                    document.getElementById('status').textContent = 'Error: Canvas tainted. Please run a local server (e.g., python -m http.server) instead of opening as file://';
-                } else {
-                    document.getElementById('status').textContent = `Error: ${error.message}`;
-                }
-                console.error(error);
-            } finally {
-                document.getElementById('generateBtn').disabled = false;
-            }
-        });
+.tile img{
+width:100%;
+image-rendering:pixelated;
+}
 
-        // Save button
-        document.getElementById('saveBtn').addEventListener('click', () => {
-            if (!generatedDataUrl) return;
+.tile:hover{
+background:#fff2c8;
+}
 
-            const link = document.createElement('a');
-            link.href = generatedDataUrl;
-            link.download = 'generated_map.png';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
+</style>
+</head>
 
-        function getOptions() {
-            const options = [];
-            const checkboxes = ['onlyfloor', 'nostairs', 'nomonsters', 'noflooritems', 'notraps', 'nokecleon', 'burieditems', 'nopatches', 'showgrid'];
+<body>
 
-            checkboxes.forEach(id => {
-                if (document.getElementById(id).checked) {
-                    options.push(`+${id}`);
-                }
-            });
+<div class="container">
 
-            const seed = document.getElementById('seed').value.trim();
-            if (seed) {
-                options.push(`+seed:${seed}`);
-            }
+<h1>PMD Map Generator</h1>
 
-            return options;
-        }
-    </script>
-    </body>
+<div class="section">
+
+<h2>Select XML File</h2>
+
+<input type="file" id="xmlFile" accept=".xml">
+
+<button id="showTilesBtn">Show Tilesets</button>
+
+<p id="xmlStatus">No file selected</p>
+
+</div>
+
+<div class="section">
+
+<h2>Generation Options</h2>
+
+<div class="options">
+
+<label><input type="checkbox" id="onlyfloor">Only Floor</label>
+<label><input type="checkbox" id="nostairs">No Stairs</label>
+<label><input type="checkbox" id="nomonsters">No Monsters</label>
+<label><input type="checkbox" id="noflooritems">No Floor Items</label>
+<label><input type="checkbox" id="notraps">No Traps</label>
+<label><input type="checkbox" id="nokecleon">No Kecleon</label>
+<label><input type="checkbox" id="burieditems">Show Buried Items</label>
+<label><input type="checkbox" id="nopatches">No Patches</label>
+<label><input type="checkbox" id="showgrid">Show Grid</label>
+
+</div>
+
+<div style="margin-top:10px">
+Seed: <input type="number" id="seed" placeholder="Random">
+</div>
+
+</div>
+
+<div class="section">
+
+<button id="generateBtn">Generate Map</button>
+<button id="saveBtn" disabled>Save Map</button>
+
+</div>
+<canvas id="mapCanvas" width="0" height="0"></canvas>
+
+<div class="status" id="status">Ready</div>
+
+<div class="section preview-wrapper">
+
+<h2>Map Preview</h2>
+
+<img id="preview" class="preview" style="display:none">
+
+<p id="previewText">Map will appear here</p>
+
+</div>
+
+</div>
+
+
+<!-- TILE MODAL -->
+
+<div id="tilesModal" class="tiles-modal">
+
+<div class="tiles-window">
+
+<h2>Select Tileset</h2>
+
+<div id="tilesGrid"></div>
+
+<button onclick="closeTiles()">Close</button>
+
+</div>
+
+</div>
+
+
+<script>
+
+let generatedDataUrl=null
+let selectedTileset=null
+
+// tilesets list (replace with JSON later if needed)
+const tilesets=[
+"1","2","3","4","5","6","7","8","9","10",
+"11","12","13","14","15","16","17","18","19","20"
+]
+
+// file selection
+document.getElementById("xmlFile").addEventListener("change",e=>{
+const file=e.target.files[0]
+document.getElementById("xmlStatus").textContent=file?`Selected: ${file.name}`:"No file selected"
+})
+
+// tiles button
+document.getElementById("showTilesBtn").onclick=()=>{
+
+const modal=document.getElementById("tilesModal")
+const grid=document.getElementById("tilesGrid")
+
+grid.innerHTML=""
+
+tilesets.forEach(id=>{
+
+const tile=document.createElement("div")
+tile.className="tile"
+
+const img=document.createElement("img")
+img.src=`assets/dungeon_tiles/dtef/${id}/tileset_0.png`
+
+const label=document.createElement("div")
+label.textContent=id
+
+tile.appendChild(img)
+tile.appendChild(label)
+
+tile.onclick=()=>{
+selectedTileset=id
+document.getElementById("status").textContent=`Tileset set to ${id}`
+closeTiles()
+}
+
+grid.appendChild(tile)
+
+})
+
+modal.style.display="flex"
+
+}
+
+function closeTiles(){
+document.getElementById("tilesModal").style.display="none"
+}
+
+// generate
+document.getElementById("generateBtn").onclick=async()=>{
+
+const fileInput=document.getElementById("xmlFile")
+
+if(!fileInput.files[0]){
+alert("Please select an XML file first!")
+return
+}
+
+document.getElementById("status").textContent="Generating map..."
+
+try{
+
+const xmlText=await fileInput.files[0].text()
+
+const options=getOptions()
+
+const dataUrl=await map_maker.generateMap(xmlText,options,selectedTileset)
+
+generatedDataUrl=dataUrl
+
+const preview=document.getElementById("preview")
+
+preview.src=dataUrl
+preview.style.display="block"
+
+document.getElementById("previewText").style.display="none"
+
+document.getElementById("saveBtn").disabled=false
+
+document.getElementById("status").textContent="Map generated!"
+
+}catch(e){
+
+document.getElementById("status").textContent=`Error: ${e.message}`
+console.error(e)
+
+}
+
+}
+
+// save
+document.getElementById("saveBtn").onclick=()=>{
+
+if(!generatedDataUrl)return
+
+const link=document.createElement("a")
+link.href=generatedDataUrl
+link.download="generated_map.png"
+link.click()
+
+}
+
+function getOptions(){
+
+const options=[]
+const ids=[
+"onlyfloor","nostairs","nomonsters","noflooritems",
+"notraps","nokecleon","burieditems","nopatches","showgrid"
+]
+
+ids.forEach(id=>{
+if(document.getElementById(id).checked)
+options.push(`+${id}`)
+})
+
+const seed=document.getElementById("seed").value.trim()
+
+if(seed) options.push(`+seed:${seed}`)
+
+return options
+
+}
+
+</script>
+
+<script src="eos_dungeons.js"></script>
+<script type="module" src="map_maker.js"></script>
+</body>
 </html>

@@ -9,8 +9,8 @@ const TILE_WATER = 21; // if you add water
 // === CANVAS SETUP ===
 const canvas = document.getElementById("mapCanvas");
 const ctx = canvas.getContext("2d");
-canvas.width = 960;
-canvas.height = 640;
+canvas.width = 0;
+canvas.height = 0;
 
 // === GAME STATE ===
 let map = [];
@@ -29,79 +29,47 @@ const DmaNeighbor = {
   SOUTH_WEST: 0x80,
 };
 
-// === 47 BASE RULES from skytemple_dtef.rules.REMAP_RULES (excluding None at index 14) ===
-// Order matches tilesheet: indices 0-13, then 15-47 of REMAP_RULES (index 14 is None)
-const BASE_RULES = [
-  DmaNeighbor.EAST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.WEST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.EAST | DmaNeighbor.SOUTH,
-  DmaNeighbor.WEST | DmaNeighbor.EAST,
- 
-  DmaNeighbor.WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.EAST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH | DmaNeighbor.SOUTH,
-  0,
-  DmaNeighbor.NORTH | DmaNeighbor.WEST,
-  DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.EAST,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST,
-  // index 14 is None in Python REMAP_RULES - skipped
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST,
-  DmaNeighbor.NORTH | DmaNeighbor.EAST,
-  DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH,
-  DmaNeighbor.EAST,
-  DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH,
-  DmaNeighbor.WEST,
-  DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST,
-  DmaNeighbor.NORTH | DmaNeighbor.EAST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH,
-  DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.EAST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.NORTH | DmaNeighbor.EAST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST,
-  DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST,
-  DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
-  DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH | DmaNeighbor.NORTH_EAST | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH_WEST | DmaNeighbor.SOUTH,
-  DmaNeighbor.NORTH_WEST | DmaNeighbor.NORTH | DmaNeighbor.WEST | DmaNeighbor.EAST | DmaNeighbor.SOUTH | DmaNeighbor.SOUTH_EAST,
+// === REMAP_RULES from skytemple_dtef.rules (48 entries). None is at index 17 — NOT 14. ===
+// explorers_dtef uses enumerate(keys): x = i % 6 + 6*ti, y = floor(i/6), skip when key is None → hole at linear index 17 → (5,2) per type block.
+// Sheet position for a base rule = its index i in this array (same i as Python enumerate).
+const REMAP_RULES_FULL = [
+  0x07, 0xc7, 0xc1, 0x05, 0x44, 0x41,
+  0x1f, 0xff, 0xf1, 0x11, 0x00, 0x50,
+  0x1c, 0x7c, 0x70, 0x14, 0x01,
+  null,
+  0xf5, 0x5f, 0x45, 0x04, 0x55, 0x40,
+  0xd7, 0x7d, 0x54, 0x15, 0x10, 0x51,
+  0xfd, 0x7f, 0x1d, 0x71, 0xc5, 0x47,
+  0xf7, 0xdf, 0x17, 0xd1, 0x74, 0x5c,
+  0x57, 0xd5, 0x5d, 0x75, 0xdd, 0x77,
 ];
 
-// === GET 256 VARIATIONS FROM BASE RULES (matches skytemple_dtef.rules.get_rule_variations) ===
-function getRuleVariations(baseRules) {
-  const variations = {};
-  for (const base of baseRules) variations[base] = new Set();
+const BASE_RULES = REMAP_RULES_FULL.filter((r) => r !== null);
 
+// === GET 256 VARIATIONS (matches skytemple_dtef.rules.get_rule_variations(REMAP_RULES)) ===
+function getRuleVariationsRemap() {
+  const variations = new Map();
+  for (const x of REMAP_RULES_FULL) {
+    variations.set(x, new Set());
+  }
   for (let rule = 0; rule < 256; rule++) {
     let r = rule;
-    // Corner cleanup: clear diagonal if either cardinal is missing (same as Python rules.py)
     if ((r & DmaNeighbor.NORTH_WEST) && (!(r & DmaNeighbor.NORTH) || !(r & DmaNeighbor.WEST))) r &= ~DmaNeighbor.NORTH_WEST;
     if ((r & DmaNeighbor.NORTH_EAST) && (!(r & DmaNeighbor.NORTH) || !(r & DmaNeighbor.EAST))) r &= ~DmaNeighbor.NORTH_EAST;
     if ((r & DmaNeighbor.SOUTH_WEST) && (!(r & DmaNeighbor.SOUTH) || !(r & DmaNeighbor.WEST))) r &= ~DmaNeighbor.SOUTH_WEST;
     if ((r & DmaNeighbor.SOUTH_EAST) && (!(r & DmaNeighbor.SOUTH) || !(r & DmaNeighbor.EAST))) r &= ~DmaNeighbor.SOUTH_EAST;
-
-    if (variations[r] !== undefined) variations[r].add(rule);
+    if (variations.has(r)) variations.get(r).add(rule);
   }
   return variations;
 }
 
-const VARIATIONS = getRuleVariations(BASE_RULES);
+const VARIATIONS = getRuleVariationsRemap();
+
+/** Linear index i in REMAP_RULES_FULL (0..47); same i used in explorers_dtef paste position. */
+function baseRuleToSheetLinearIndex(baseRule) {
+  const i = REMAP_RULES_FULL.indexOf(baseRule);
+  return i;
+}
 
 /** Apply same corner cleanup as rules.py: clear diagonal bits when the two cardinals are not both set. */
 function reduceRule(rawRule) {
@@ -154,21 +122,13 @@ const TILE_TYPE_OFFSET = {
   [TILE_FLOOR]: 2,
 
 };
-// Tilesheet layout matches explorers_dtef: 6 cols x 8 rows per type, 3 types side-by-side (18 cols total).
-// REMAP_RULES has None at index 14, so the exported sheet has an empty/purple slot at (2,2) per type — we must skip it.
+// Tilesheet layout matches explorers_dtef: enumerate index i -> x = i % 6 + 6*type, y = floor(i/6). None at REMAP_RULES index 17 -> hole at i=17 -> (5,2) per type.
 const TILESHEET_WIDTH = 6;
- /** Linear position of the empty/purple slot in each type block (col=2, row=2 -> local index 14). */
-const EMPTY_SLOT_COL = 2;
-const EMPTY_SLOT_ROW = 2;
+const EMPTY_SLOT_LINEAR = 17;
+const EMPTY_SLOT_COL = EMPTY_SLOT_LINEAR % TILESHEET_WIDTH;
+const EMPTY_SLOT_ROW = Math.floor(EMPTY_SLOT_LINEAR / TILESHEET_WIDTH);
 
-/** Logical rule index 0..46 -> sheet position (skips index 14 = empty/purple slot). */
-function ruleIndexToSheetPosition(logicalIndex) {
-  if (logicalIndex === 15) return 33;
-  if(logicalIndex===17) return 10;
-  return logicalIndex < 14 ? logicalIndex : logicalIndex + 1;
-}
-
-/** Never sample the purple/empty slot; if we land on it, use the next tile. */
+/** Never sample the empty slot at i=17; if we land on it, use the next tile to the right. */
 function clampAwayFromEmptySlot(col, row, typeOffset) {
   const localCol = col - TILESHEET_WIDTH * typeOffset;
   const localRow = row;
@@ -184,17 +144,15 @@ function getMappedTileIndex(x, y, xmlTiles, ruleVariations) {
   const type = map[y][x];
 
   const baseRule = reduceRule(rawBf);
-  let baseRuleIndex = BASE_RULES.indexOf(baseRule);
-  if (baseRuleIndex < 0) {
-    baseRuleIndex = type === TILE_WALL ? BASE_RULES.indexOf(0xFF) : 0;
-    if (baseRuleIndex < 0) baseRuleIndex = 0;
+  let sheetLinear = baseRuleToSheetLinearIndex(baseRule);
+  if (sheetLinear < 0) {
+    const fb = type === TILE_WALL ? baseRuleToSheetLinearIndex(0xff) : 0;
+    sheetLinear = fb >= 0 ? fb : 0;
   }
-  const idx = baseRuleIndex;
 
-  const sheetPos = ruleIndexToSheetPosition(idx);
   const typeOffset = TILE_TYPE_OFFSET[type] ?? 0;
-  let col = (sheetPos % TILESHEET_WIDTH) + (TILESHEET_WIDTH * typeOffset);
-  let row = Math.floor(sheetPos / TILESHEET_WIDTH);
+  let col = (sheetLinear % TILESHEET_WIDTH) + (TILESHEET_WIDTH * typeOffset);
+  let row = Math.floor(sheetLinear / TILESHEET_WIDTH);
   ({ col, row } = clampAwayFromEmptySlot(col, row, typeOffset));
 
   return { col, row };
@@ -247,7 +205,7 @@ const xmlTiles = [
 ];
 // Generate all wall tiles
 for (let base of BASE_RULES) {
-  const variations = Array.from(VARIATIONS[base]); // set of valid variations
+  const variations = Array.from(VARIATIONS.get(base) ?? []);
   let i = 0;
   for (let v of variations) {
     xmlTiles.push({
@@ -261,7 +219,7 @@ for (let base of BASE_RULES) {
 
 // Generate all floor tiles
 for (let base of BASE_RULES) {
-  const variations = Array.from(VARIATIONS[base]);
+  const variations = Array.from(VARIATIONS.get(base) ?? []);
   let i = 0;
   for (let v of variations) {
     xmlTiles.push({
